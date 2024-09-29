@@ -9,13 +9,15 @@ const server = http.createServer((req, res) => {
     // to GET information
     if (req.method === "GET" && (req.url === "/data" || req.url === "/") ) {
         try {
-            const data = fs.readFileSync(DATA_FILE, 'utf8');
+            const data = fs.readFileSync(DATA_FILE, 'utf-8');
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(data); //sends the data back to the client
         } catch (error) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Failed to read data' }));
         }
+
+        //to POST information
     } else if (req.method === "POST" && req.url === "/data") {
 
         let body = "";
@@ -35,17 +37,54 @@ const server = http.createServer((req, res) => {
                 fs.writeFileSync(DATA_FILE, JSON.stringify(parsedData, null));
 
                 res.writeHead(201, {"Content-Type": "application/json"});
-                // res.end(parsedData);
+
                 res.end(JSON.stringify(parsedData));
             }catch(error){
                 res.writeHead(400, {"Content-Type": "application/json"});
-                res.end(JSON.stringify({error: "failed to write data"}));
+                res.end(JSON.stringify({error: "failed to add data"}));
             }
         })
 
+        //to PUT information
     } else if (req.method === "PUT" && req.url === "/data") {
+        let body = "";
 
-    } else {
+        req.on("data", chunk => {
+            body = body + chunk.toString(); // Accumulate incoming data chunks
+        });
+
+        req.on("end", () => {
+            try {
+                const updatedData = JSON.parse(body);
+                const parsedData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+
+                const updateId = updatedData.id
+                const index = parsedData.findIndex((dataItem) => {
+                    dataItem.id === updateId
+                })
+
+                if(index !== -1){
+                    
+                }
+
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Failed to update' }));
+            }
+        });
+        
+        // to DELETE information
+    } else if (req.method === "DELETE" && req.url.startsWith("/data/")) {
+
+       try{
+
+       }catch(error){
+           res.writeHead(500, { 'Content-Type': 'application/json' });
+           res.end(JSON.stringify({ error: 'Failed to delete' }));
+       }
+
+
+    }else {
         // 404 Not Found
         res.writeHead(404);
         res.end(JSON.stringify({ message: "Not Found" }));
