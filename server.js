@@ -6,10 +6,12 @@ const PORT = 8000;
 const DATA_FILE = 'data.json';
 
 const server = http.createServer((req, res) => {
+    // url.parse(req.url, true);
     // to GET information
-    if (req.method === "GET" && (req.url === "/data" || req.url === "/") ) {
+    if (req.method === "GET" && req.url === "/data") {
         try {
             const data = fs.readFileSync(DATA_FILE, 'utf-8');
+            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(data); //sends the data back to the client
         } catch (error) {
@@ -32,12 +34,13 @@ const server = http.createServer((req, res) => {
                 const addedData = JSON.parse(body); //pass the JSON-formatted string into a JavaScript object accumulated in the body 
                 const parsedData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
 
+                const highestId = parsedData.length > 0 ? Math.max(...parsedData.map(item => item.id)) : 0;
+                addedData.id = highestId + 1;
+                
                 parsedData.push(addedData); //adds the new data to end of the existing array
 
                 fs.writeFileSync(DATA_FILE, JSON.stringify(parsedData, null));
-
                 res.writeHead(201, {"Content-Type": "application/json"});
-
                 res.end(JSON.stringify(parsedData));
             }catch(error){
                 res.writeHead(400, {"Content-Type": "application/json"});
@@ -48,35 +51,61 @@ const server = http.createServer((req, res) => {
         //to PUT information
     } else if (req.method === "PUT" && req.url === "/data") {
         let body = "";
-
+    
         req.on("data", chunk => {
-            body = body + chunk.toString(); // Accumulate incoming data chunks
+            body += chunk.toString(); // Accumulate incoming data chunks
         });
-
+        
         req.on("end", () => {
             try {
                 const updatedData = JSON.parse(body);
                 const parsedData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-
-                const updateId = updatedData.id
+    
+                const updateId = updatedData.id;
                 const index = parsedData.findIndex((dataItem) => {
-                    dataItem.id === updateId
+                    return dataItem.id === updateId
                 })
-
-                if(index !== -1){
-                    
+                // Check if the id exists
+                if (index !== -1) {
+                    parsedData[index] = { ...parsedData[index], ...updatedData };//copies the existing object and updates the properties
+    
+                    fs.writeFileSync(DATA_FILE, JSON.stringify(parsedData, null));
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(parsedData));
+                }else{
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'ID not found' }));
                 }
-
+    
             } catch (error) {
+                console.error('Error updating data:', error);
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Failed to update' }));
+                res.end(JSON.stringify({ error: 'Failed to update: Invalid data' }));
             }
         });
+        //to DELETE information
+    } else if (req.method === "DELETE" && req.url.startsWith("/data")) {
         
-        // to DELETE information
-    } else if (req.method === "DELETE" && req.url.startsWith("/data/")) {
+        const deleteId = req.url.split("?id=").pop();  //converts to array and deletes the last element
+        // console.log(deleteId);
+       
+        try{
+        const parsedData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")); // reads existing data
 
-       try{
+        const index = parsedData.findIndex((dataItem) => {
+            return dataItem.id == deleteId
+        })
+        // Check if the id exists
+        if (index !== -1) {
+            parsedData.splice(index, 1); // removes the specified data from the array
+            
+            fs.writeFileSync(DATA_FILE, JSON.stringify(parsedData, null));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(parsedData));
+        } else {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'ID not found' }));
+        }
 
        }catch(error){
            res.writeHead(500, { 'Content-Type': 'application/json' });
