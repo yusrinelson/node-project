@@ -1,21 +1,19 @@
 const http = require("http");
 const fs = require("fs");
-const url = require("url");
 
 const PORT = 8000;
 const DATA_FILE = 'data.json';
 
 const server = http.createServer((req, res) => {
-    // url.parse(req.url, true);
     // to GET information
     if (req.method === "GET" && req.url === "/data") {
         try {
-            const data = fs.readFileSync(DATA_FILE, 'utf-8');
+            const data = fs.readFileSync(DATA_FILE, 'utf-8'); // checks the existing data
             
-            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.writeHead(200, { 'Content-Type': 'application/json' });//200 is OK
             res.end(data); //sends the data back to the client
         } catch (error) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.writeHead(500, { 'Content-Type': 'application/json' }); //
             res.end(JSON.stringify({ error: 'Failed to read data' }));
         }
 
@@ -40,10 +38,10 @@ const server = http.createServer((req, res) => {
                 parsedData.push(addedData); //adds the new data to end of the existing array
 
                 fs.writeFileSync(DATA_FILE, JSON.stringify(parsedData, null));
-                res.writeHead(201, {"Content-Type": "application/json"});
+                res.writeHead(201, {"Content-Type": "application/json"}); //201 is created
                 res.end(JSON.stringify(parsedData));
             }catch(error){
-                res.writeHead(400, {"Content-Type": "application/json"});
+                res.writeHead(400, {"Content-Type": "application/json"}); //400 is bad request
                 res.end(JSON.stringify({error: "failed to add data"}));
             }
         })
@@ -73,13 +71,13 @@ const server = http.createServer((req, res) => {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(parsedData));
                 }else{
-                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.writeHead(404, { 'Content-Type': 'application/json' }); //404 is not found
                     res.end(JSON.stringify({ error: 'ID not found' }));
                 }
     
             } catch (error) {
                 console.error('Error updating data:', error);
-                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.writeHead(400, { 'Content-Type': 'application/json' }); //400 is bad request
                 res.end(JSON.stringify({ error: 'Failed to update: Invalid data' }));
             }
         });
@@ -87,7 +85,6 @@ const server = http.createServer((req, res) => {
     } else if (req.method === "DELETE" && req.url.startsWith("/data")) {
         
         const deleteId = req.url.split("?id=").pop();  //converts to array and deletes the last element
-        // console.log(deleteId);
        
         try{
         const parsedData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8")); // reads existing data
